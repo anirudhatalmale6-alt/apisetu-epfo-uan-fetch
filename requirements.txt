@@ -1,0 +1,5 @@
+requests>=2.28
+
+# Optional. Enables page count, orientation reporting and auto-rotation.
+# The tool works without it, it just cannot describe page geometry.
+pypdf>=3.9

@@ -1,0 +1,108 @@
+{
+  "info": {
+    "name": "APISetu - EPFO (epfindia v3)",
+    "description": "The three document APIs EPFO publish on APISetu, taken from their OpenAPI 3.0.0 specification.\n\nSet the collection variables first:\n- baseUrl: https://apisetu.gov.in/epfindia/v3 for live, or http://127.0.0.1:8099/epfindia/v3 for the bundled mock server\n- apiKey: from the APISetu Partners portal, Consume APIs > API Keys (shown once at creation)\n- clientId: also labelled Issuer ID, bottom-left of the portal sidebar\n\nEvery endpoint returns application/pdf on success. In Postman use Send and Download to save the response, since the body is the PDF itself and not JSON.\n\nNote on consentArtifact: it is omitted below because the endpoint does not require it and its mandatory signature field has no published algorithm. Confirm with EPFO before adding one.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "https://apisetu.gov.in/epfindia/v3" },
+    { "key": "apiKey", "value": "" },
+    { "key": "clientId", "value": "" },
+    { "key": "uan", "value": "100000035770" },
+    { "key": "dob", "value": "31-12-1980" },
+    { "key": "ppoNumber", "value": "" },
+    { "key": "schemeCertNumber", "value": "" },
+    { "key": "fullName", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "UAN Card",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+              "",
+              "pm.test('body really is a PDF, not an error page', function () {",
+              "    // Content-Type alone is not proof: a gateway error page can arrive",
+              "    // labelled application/pdf. The %PDF- magic bytes are what decide.",
+              "    const bytes = pm.response.stream;",
+              "    const head = String.fromCharCode.apply(null, bytes.slice(0, 5));",
+              "    pm.expect(head).to.eql('%PDF-');",
+              "});",
+              "",
+              "pm.test('PDF is not suspiciously small', function () {",
+              "    pm.expect(pm.response.stream.length).to.be.above(512);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "X-APISETU-APIKEY", "value": "{{apiKey}}" },
+          { "key": "X-APISETU-CLIENTID", "value": "{{clientId}}" },
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Accept", "value": "application/pdf" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"txnId\": \"{{$guid}}\",\n  \"format\": \"pdf\",\n  \"certificateParameters\": {\n    \"UAN\": \"{{uan}}\",\n    \"DOB\": \"{{dob}}\"\n  }\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/uncrd/certificate",
+          "host": ["{{baseUrl}}"],
+          "path": ["uncrd", "certificate"]
+        },
+        "description": "Returns the employee's UAN Card as a PDF. Requires UAN (12 digits) and date of birth in DD-MM-YYYY. A 404 means no record matches that UAN and DOB pair."
+      }
+    },
+    {
+      "name": "Pension Certificate",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "X-APISETU-APIKEY", "value": "{{apiKey}}" },
+          { "key": "X-APISETU-CLIENTID", "value": "{{clientId}}" },
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Accept", "value": "application/pdf" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"txnId\": \"{{$guid}}\",\n  \"format\": \"pdf\",\n  \"certificateParameters\": {\n    \"PPONO\": \"{{ppoNumber}}\",\n    \"DOB\": \"{{dob}}\"\n  }\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/pecer/certificate",
+          "host": ["{{baseUrl}}"],
+          "path": ["pecer", "certificate"]
+        },
+        "description": "Pension Certificate by PPO number and date of birth."
+      }
+    },
+    {
+      "name": "Scheme Certificate",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "X-APISETU-APIKEY", "value": "{{apiKey}}" },
+          { "key": "X-APISETU-CLIENTID", "value": "{{clientId}}" },
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Accept", "value": "application/pdf" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"txnId\": \"{{$guid}}\",\n  \"format\": \"pdf\",\n  \"certificateParameters\": {\n    \"SCNO\": \"{{schemeCertNumber}}\",\n    \"FullName\": \"{{fullName}}\",\n    \"DOB\": \"{{dob}}\"\n  }\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/epfsc/certificate",
+          "host": ["{{baseUrl}}"],
+          "path": ["epfsc", "certificate"]
+        },
+        "description": "Scheme Certificate by scheme certificate number, full name and date of birth."
+      }
+    }
+  ]
+}
